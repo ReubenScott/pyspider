@@ -7,6 +7,7 @@ __Author__ = 'Negoo_wen'
 #-------------------------------------------------------------------------------
 
 import os
+import base64
 import requests
 from Crypto.Cipher import AES
 import m3u8
@@ -21,16 +22,21 @@ headers = {
   'Cookie': 'browsingData=%7B%220%22%3A%22614%22%2C%222%22%3A%22606%22%7D; _ga=GA1.2.807682766.1634046460; _gid=GA1.2.1364143737.1634046460; kikubonses=dvlt13r6f90gdsg6dmnmdmu8an; login20160719=7a427f1d045f3275ec3e9347c3b5b3ea7f34e64b; __c__login20160719=2c57df253e4154dfa922e18daab1f1b45533b067',
 }
 
+
 # Extract MP3 audio from Videos
 def video_to_mp3(file_name):
   """ Transforms video file into a MP3 file """
   try:
     file, extension = os.path.splitext(file_name)
+    dir_path = os.path.dirname(file_name)
+    file_title = os.path.basename(file)
+    wav_file = base64.b64encode(bytes(file_title, 'utf-8'))
+    wav_file = os.path.join(dir_path, str(wav_file, encoding = "utf-8"))
     # Convert video into .wav file
-    os.system('ffmpeg -i {file}{ext} {file}.wav'.format(file=file, ext=extension))
+    os.system('ffmpeg -i {file}{ext} {tmp}.wav'.format(file=file, ext=extension, tmp=wav_file))
     # Convert .wav into final .mp3 file
-    os.system('lame {file}.wav {file}.mp3'.format(file=file))
-    os.remove('{}.wav'.format(file))  # Deletes the .wav file
+    os.system('lame {tmp}.wav {file}.mp3'.format(file=file, tmp=wav_file ))
+    os.remove('{}.wav'.format(wav_file))  # Deletes the .wav file
     print('"{}" successfully converted into MP3!'.format(file_name))
   except OSError as err:
     print(err.reason)
@@ -44,8 +50,9 @@ if __name__ == '__main__':
     # 创建线程的线程池
     dpath = 'D:/Back/'
     # "https://kikubon.jp/mlist.php?asKey=4097&.m3u8"
-    url = input('请输入音频的HLS信息: ')
-    title = input('请输入保存文件名: ')
+    url = input('请输入音频的HLS信息: ').strip()
+    title = input('请输入保存文件名: ').strip()
+    
     
     http_client = m3u8.httpclient.DefaultHTTPClient()
     
@@ -103,7 +110,7 @@ if __name__ == '__main__':
   
   
     print(media_ts_name)
-    video_path = os.path.join(dpath, title.strip() + '.mp4') 
+    video_path = os.path.join(dpath, title + '.mp4') 
     if os.path.exists(video_path): 
       os.remove(video_path)
       
@@ -117,9 +124,13 @@ if __name__ == '__main__':
     video_to_mp3(video_path)
 
     # 刪除ts文件
-    os.remove(video_path)
-    for ts_name in media_ts_name:
-      os.remove(ts_dir + ts_name)
+    audio_path = os.path.join(dpath, title + '.mp3') 
+    if os.path.exists(audio_path): 
+      os.remove(video_path)
+      for ts_name in media_ts_name:
+        os.remove(ts_dir + ts_name)
+    else:
+      print("Extract MP3 failed ：" + video_path)
   except Exception as ex:
     print(ex)
     print("download failed ：" + url)
