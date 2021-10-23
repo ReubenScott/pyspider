@@ -7,6 +7,7 @@ __Author__ = 'Negoo_wen'
 #-------------------------------------------------------------------------------
 
 import os
+import shutil
 import base64
 import requests
 from Crypto.Cipher import AES
@@ -85,10 +86,13 @@ if __name__ == '__main__':
       
     print(media_url_list)
     
+
     # 用来保存ts文件 
-    ts_dir = os.path.join(dpath,'.ts/') 
+    ts_dir = base64.b64encode(bytes(title, 'utf-8'))
+    ts_dir = os.path.join(dpath, '.ts/', str(ts_dir, encoding = "utf-8"))
     if not os.path.exists(ts_dir): 
       os.mkdir(ts_dir)
+    
     
     # 下载ts媒体文件
     for index, ts_url in enumerate(media_url_list):
@@ -101,11 +105,11 @@ if __name__ == '__main__':
       reditList = rsp.history #可以看出获取的是一个地址序列
       #获取重定向最终的url
       redit_url = reditList[len(reditList)-1].headers["location"]
-      
+      # 下载ts媒体文件
       con = requests.get(redit_url, headers=headers).content
       if cipher: # 解密
         con = cipher.decrypt(con)
-      with open(ts_dir + ts_name, 'wb') as fw:
+      with open(os.path.join(ts_dir , ts_name), 'wb') as fw:
         fw.write(con)
   
   
@@ -117,7 +121,7 @@ if __name__ == '__main__':
     # 合并ts文件转化为视频文件
     with open(video_path , 'ab') as fw:
       for ts_name in media_ts_name:
-        with open(ts_dir+ ts_name, 'rb') as fr:
+        with open(os.path.join(ts_dir , ts_name), 'rb') as fr:
           fw.write(fr.read())
 
     # convert mp4 to mp3 
@@ -127,8 +131,7 @@ if __name__ == '__main__':
     audio_path = os.path.join(dpath, title + '.mp3') 
     if os.path.exists(audio_path): 
       os.remove(video_path)
-      for ts_name in media_ts_name:
-        os.remove(ts_dir + ts_name)
+      shutil.rmtree(ts_dir)
     else:
       print("Extract MP3 failed ：" + video_path)
   except Exception as ex:

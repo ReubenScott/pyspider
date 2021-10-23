@@ -7,18 +7,23 @@ __Author__ = 'chen'
 #-------------------------------------------------------------------------------
 
 import os
+import io
+import sys
 import re
 import socks
 import socket
 import base64
-import requests
+import shutil
 import threading
 import sqlite3
+import requests
+from requests.adapters import HTTPAdapter
 from enum import Enum, unique
 from Crypto.Cipher import AES
 from Crypto import Random
 from concurrent.futures import ThreadPoolExecutor
-from itertools import product
+# from itertools import product
+from tqdm import tqdm
 import m3u8
 
 
@@ -32,7 +37,8 @@ class Status(Enum):
 
 # 配置headers防止被墙，一般问题不大
 headers = {
-  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36'
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36',
+  'Connection': 'close'
 }
 
 proxies = {
@@ -40,9 +46,11 @@ proxies = {
   'https': 'socks5://127.0.0.1:8580'
 }
 
+timeout=10
+
 socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 7027)
 socket.socket = socks.socksocket
-
+socket.setdefaulttimeout(timeout)
   
 dbfile = 'D:/Database/SQLite/hls.db'
 tablename = 'ABEMA'
@@ -137,9 +145,18 @@ def upate_status(pk, status):
 
 
 
+# 信号量
+sema = True
+
+
 # 下载ts媒体文件
 def download(minyami):
   try:
+    # 创建线程的线程池
+    executor = ThreadPoolExecutor(max_workers=3)
+    global sema
+    sema = True
+    
     pk = minyami[0]
     title = minyami[1]
     url = minyami[2]
@@ -179,37 +196,52 @@ def download(minyami):
     print(media_url_list)
     
     # 用来保存ts文件 
-    ts_dir = os.path.join(dpath,'.ts/') 
+    ts_name = base64.b64encode(bytes(title, 'utf-8'))
+    ts_dir = os.path.join(dpath, '.ts/', str(ts_name, encoding = "utf-8"))
     if not os.path.exists(ts_dir): 
       os.mkdir(ts_dir)
     
-    # 下载ts媒体文件
+  
+    # 下载ts媒体文件 
+    pbar = tqdm(total=len(media_url_list), initial=1, unit='Piece', unit_scale=True, desc='Processing: ')
     pattern_ts = re.compile('.*\/(.*\.ts)', re.MULTILINE | re.DOTALL)
     for ts_url in media_url_list:
       ts_name = pattern_ts.findall(ts_url)[0]
       media_ts_name.append(ts_name)
-      print(ts_name, ts_url)
+#       print(ts_name, ts_url)
+      # 通过submit函数提交执行的函数到线程池中，submit函数立即返回，不阻塞
+      futrue = executor.submit(down_from_url, ts_url, os.path.join(ts_dir , ts_name) , pbar)
+      futrue.add_done_callback(callback)
+      '''
       # 下载ts媒体文件
-      con = requests.get(ts_url).content
-      if cipher: # 解密
-        con = cipher.decrypt(con)
-      with open(ts_dir + ts_name, 'wb') as fw:
-        fw.write(con)
+      if False == down_from_url(ts_url, os.path.join(ts_dir , ts_name)):
+        upate_status(pk, Status.FAILURE)
+        return
+      pbar.update(1)
+      '''
   
+    # 相当于进程池的pool.close() pool.join()
+    executor.shutdown()  
   
-    # 合并ts文件转化为视频文件
-    print(media_ts_name)
-    with open(dpath  + title + '.mp4' , 'ab') as fw:
-      for ts_name in media_ts_name:
-        with open(ts_dir+ ts_name, 'rb') as fr:
-          fw.write(fr.read())
-
-    # 刪除ts文件
-    for ts_name in media_ts_name:
-      os.remove(ts_dir + ts_name)
+    if sema:
+      # 合并ts文件转化为视频文件
+      video_path = os.path.join(dpath, title + '.mp4') 
+      if os.path.exists(video_path): 
+        os.remove(video_path)
       
-    # 開始下載 更新狀態 
-    upate_status(pk, Status.SUCCESS)
+      with open(video_path, 'ab') as fw:
+        for ts_name in media_ts_name:
+          with open(os.path.join(ts_dir, ts_name), 'rb') as fr:
+            if cipher: # 解密
+              fw.write(cipher.decrypt(fr.read()))
+            else:
+              fw.write(fr.read())
+              
+      # 刪除ts文件夹
+      shutil.rmtree(ts_dir)
+          
+      # 開始下載 更新狀態 
+      upate_status(pk, Status.SUCCESS)
   except Exception as ex:
     print(ex)
     print("download failed ：" + url )
@@ -217,13 +249,60 @@ def download(minyami):
     exit(1)
 
 
+#  requests 下载文件
+def down_from_url(url, dst , pbar):
+  try:
+    global sema 
+    if sema:
+  #     requests.adapters.DEFAULT_RETRIES = 5
+      session = requests.session()   
+      session.keep_alive = False # 设置连接活跃状态为False
+      #设置重连次数
+      session.mount('http://', HTTPAdapter(max_retries=3))
+      session.mount('https://', HTTPAdapter(max_retries=3))
+      
+      response = session.get(url, headers=headers, stream=True, timeout=timeout)
+      total_size = int(response.headers['Content-Length'])
+      with open(dst, 'wb') as of:
+        for chunk in response.iter_content(chunk_size=1024):
+          if chunk:
+            of.write(chunk)
+            
+      # 关闭请求 释放内存 
+      response.close() 
+      del(response)
+      
+      # 下载完毕后我会使用如下方式和上面的 total_size 进行对比
+      with open(dst, 'r') as f:
+        if isinstance(f, io.TextIOBase):
+          length = os.fstat(f.fileno()).st_size
+          
+  except Exception as ex:
+    print(ex)
+    return False
+  else:
+    pbar.update(1)
+    return total_size == length
+  finally:
+    session.close()
+    del(session)
+
+
+#  requests 下载回調
+def callback(future): 
+  global sema
+  result = future.result() 
+  cur_thread = threading.current_thread().name 
+  # 下载ts媒体文件
+  if False == result:      
+    sema = False
+#     upate_status(pk, Status.FAILURE)
+
+
 
 if __name__ == '__main__':
   
   http_client = m3u8.httpclient.DefaultHTTPClient()
-  
-  # 创建线程的线程池
-  executor = ThreadPoolExecutor(max_workers=1)
   
     
   # minyami -d "https://ds-vod-abematv.akamaized.net/program/30-5_s4_p74/180/playlist.m3u8?aver=1&ccf=26&dt=pc_unknown&dtid=jdwHcemp6THr&enc=clear" --output "進撃の巨人 - The Final Season - 74話 (アニメ)  無料動画・見逃し配信を見るなら  ABEMA.ts" --key "e77391787d2ad2d73ad2e823e686e91e"
@@ -250,12 +329,7 @@ if __name__ == '__main__':
   values = get_hls()
   for minyami in values:
     print(minyami)
-#     download(minyami)
-    # 通过submit函数提交执行的函数到线程池中，submit函数立即返回，不阻塞
-    executor.submit(download, minyami)
-    
-  # 相当于进程池的pool.close() pool.join()
-  executor.shutdown()  
+    download(minyami)
   
   
   
