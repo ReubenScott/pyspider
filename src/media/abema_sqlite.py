@@ -251,9 +251,9 @@ def download(minyami):
 
 #  requests 下载文件
 def down_from_url(url, dst , pbar):
-  try:
-    global sema 
-    if sema:
+  global sema 
+  if sema:
+    try:
   #     requests.adapters.DEFAULT_RETRIES = 5
       session = requests.session()   
       session.keep_alive = False # 设置连接活跃状态为False
@@ -276,16 +276,17 @@ def down_from_url(url, dst , pbar):
       with open(dst, 'r') as f:
         if isinstance(f, io.TextIOBase):
           length = os.fstat(f.fileno()).st_size
-          
-  except Exception as ex:
-    print(ex)
-    return False
-  else:
-    pbar.update(1)
-    return total_size == length
-  finally:
-    session.close()
-    del(session)
+            
+    except Exception as ex:
+      print(ex)
+      return False
+    else:
+      return total_size == length
+    finally:
+      session.close()
+      del(session)
+      
+  pbar.update(1)
 
 
 #  requests 下载回調
