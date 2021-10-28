@@ -8,7 +8,6 @@ __Author__ = 'chen'
 
 import os
 import io
-import sys
 import re
 import socks
 import socket
@@ -20,9 +19,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from enum import Enum, unique
 from Crypto.Cipher import AES
-from Crypto import Random
 from concurrent.futures import ThreadPoolExecutor
-# from itertools import product
 from tqdm import tqdm
 import m3u8
 
@@ -281,12 +278,12 @@ def down_from_url(url, dst , pbar):
       print(ex)
       return False
     else:
+      pbar.update(1)
       return total_size == length
     finally:
       session.close()
       del(session)
       
-  pbar.update(1)
 
 
 #  requests 下载回調
