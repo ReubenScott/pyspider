@@ -167,19 +167,19 @@ class ExcelHandler:
 
 if __name__ == "__main__":    
   
-  list1 = ExcelHandler("D:/back/N1必背2000词.xlsx","平仮名").get_data()  
+  list1 = ExcelHandler("D:/back/N1必背.xlsx").get_data("平仮名")  
   print(list1)
   
-  list2 = ExcelHandler("D:/back/JLPT单词.xlsm","N1級").get_data()  
+  list2 = ExcelHandler("D:/back/JLPT单词.xlsm").get_data("N1級")  
   print(list2)
   
-  list3 = ExcelHandler("D:/back/JLPT单词.xlsm","N2級").get_data()  
+  list3 = ExcelHandler("D:/back/JLPT单词.xlsm").get_data("N2級")  
   print(list3)
   
-  list4 = ExcelHandler("D:/back/JLPT单词.xlsm","3、4級").get_data()  
+  list4 = ExcelHandler("D:/back/JLPT单词.xlsm").get_data("3、4級")  
   print(list4)
   
-  list5 = ExcelHandler("D:/back/JLPT单词.xlsm","接头接尾").get_data()  
+  list5 = ExcelHandler("D:/back/JLPT单词.xlsm").get_data("接头接尾")  
   print(list5)
   
   list2.extend(list3)
@@ -187,37 +187,28 @@ if __name__ == "__main__":
   list2.extend(list5)
   
   samewords = [] #创建一个空列表
+  samewords2 = [] #创建一个空列表
   # 列表的逆序遍历  remove
   for word1 in reversed(list1):     
 #     print(word1.spell,word1.pron);
     for word2 in reversed(list2):     
-      if( str(word1.pron).strip()== str(word2.pron).strip()):      
-#           TODO   list1  が　list2　と  重なる
-        #if (word1 != word2) and not (word1.accent == word2.accent and word1.word_class == word2.word_class and word1.sentence == word2.sentence  and word1.translation == word2.translation): 
-#         if not word2.sentence and word1.sentence :
+#       if word1.is_same_key(word2):
+      if str(word1.pron).strip() == str(word2.pron).strip():  
 
-#         if str(word1.spell).strip() in str(word2.spell).strip(): 
-#         if word1 not in samewords:
-        samewords.append(word1)       
-#         samewords.append(word2)
-#           print(word2.spell,word2.pron);
-        list2.remove(word2)
+        if word1 not in samewords:
+          samewords.append(word1)       
+        if word2 not in samewords2:
+          samewords2.append(word2)
+        
+        if word2 in list2:
+          list2.remove(word2)
           
-        list1.remove(word1)
-        break
+        if word1 in list1:
+          list1.remove(word1)
+#         break
       
-      
-  ExcelHandler("D:/back/hello.xlsx","平仮名").save_to_excel(list1)
-#   doExcel("D:/back/hello.xlsx","平仮名2").save_to_excel(list2)
-  ExcelHandler("D:/back/hello.xlsx","重なる").save_to_excel(samewords)
-         
-  '''
-  list2=doExcel("D:/temp/JLPT单词.xlsm","N1級").get_data()
-  
-  print(list2)  
-  print(set(list1) - set(list2))  # {2, 6}  
-  list3 = [item for item in list1 if item not in set(list2)]
-  print(list3)  # [2, 6]
-  '''
+  ExcelHandler.create_to_excel('D:/back/hello.xlsx', list1,"平仮名")
+  ExcelHandler.create_to_excel("D:/back/hello.xlsx", reversed(samewords), "重なる1")
+  ExcelHandler.create_to_excel("D:/back/hello.xlsx", reversed(samewords2), "重なる2")
   
   

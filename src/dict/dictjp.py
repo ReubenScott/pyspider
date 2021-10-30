@@ -262,18 +262,18 @@ def search_hjclass_dict(word):
 if __name__ == "__main__":    
   
 #   res=doExcel("D:/back/N1必背.xlsx","平仮名").get_data()
-  res = ExcelHandler("D:/back/N1必背.xlsx").get_data()
-  print(res)
+  words = ExcelHandler("D:/back/N1必背.xlsx").get_data()
+  print(words)
   
-  for word in res:
+  # 爬取要素
+  for word in words:
     if word.need_fix():
       print(word)
       search_moji_dict(word)
       if word.need_fix():
-        time.sleep(5) #設置查詢間隔
         search_hjclass_dict(word)
       print(word)
       
-  ExcelHandler.create_to_excel('D:/back/hello.xlsx', res)
+  ExcelHandler.create_to_excel('D:/back/hello.xlsx', words)
 
 
