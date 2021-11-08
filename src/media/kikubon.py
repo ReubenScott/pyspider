@@ -10,6 +10,7 @@ import os
 import shutil
 import base64
 import requests
+from requests.adapters import HTTPAdapter
 from Crypto.Cipher import AES
 import m3u8
 
@@ -23,6 +24,7 @@ headers = {
   'Cookie': 'browsingData=%7B%220%22%3A%22614%22%2C%222%22%3A%22606%22%7D; _ga=GA1.2.807682766.1634046460; _gid=GA1.2.1364143737.1634046460; kikubonses=dvlt13r6f90gdsg6dmnmdmu8an; login20160719=7a427f1d045f3275ec3e9347c3b5b3ea7f34e64b; __c__login20160719=2c57df253e4154dfa922e18daab1f1b45533b067',
 }
 
+timeout=10
 
 # Extract MP3 audio from Videos
 def video_to_mp3(file_name):
@@ -40,7 +42,7 @@ def video_to_mp3(file_name):
     os.remove('{}.wav'.format(wav_file))  # Deletes the .wav file
     print('"{}" successfully converted into MP3!'.format(file_name))
   except OSError as err:
-    print(err.reason)
+    print(err)  
     exit(1)
 
 
@@ -50,6 +52,13 @@ if __name__ == '__main__':
   try:
     # 创建线程的线程池
     dpath = 'D:/Back/'
+    
+    session = requests.session()   
+    session.keep_alive = False # 设置连接活跃状态为False
+    #设置重连次数
+    session.mount('http://', HTTPAdapter(max_retries=3))
+    session.mount('https://', HTTPAdapter(max_retries=3))
+    
     # "https://kikubon.jp/mlist.php?asKey=4097&.m3u8"
     url = input('请输入音频的HLS信息: ').strip()
     title = input('请输入保存文件名: ').strip()
@@ -67,15 +76,18 @@ if __name__ == '__main__':
         key.uri
         key.method
         
-    rsp = requests.get(key.uri, headers=headers,allow_redirects=True)
+    
+    rsp = session.get(key.uri, headers=headers, allow_redirects=True)
     #history追踪页面重定向历史
     reditList = rsp.history #可以看出获取的是一个地址序列
     #获取重定向最终的url
     redit_url = reditList[len(reditList)-1].headers["location"]
-
-    password = requests.get(redit_url, headers=headers).content
-    # 初始化AES    
-    cipher = AES.new(password,AES.MODE_CBC,password)
+    
+    rsp = session.get(redit_url, headers=headers)
+    password  = rsp.content
+    # 初始化AES     
+    cipher = AES.new(password, AES.MODE_CBC, password)
+    
     
     #EXTINF  TS地址提取
     media_url_list = []
@@ -86,7 +98,6 @@ if __name__ == '__main__':
       
     print(media_url_list)
     
-
     # 用来保存ts文件 
     ts_dir = base64.b64encode(bytes(title, 'utf-8'))
     ts_dir = os.path.join(dpath, '.ts/', str(ts_dir, encoding = "utf-8"))
@@ -99,20 +110,31 @@ if __name__ == '__main__':
       ts_name = str(index) + '.ts'
       print(ts_name, ts_url)
       media_ts_name.append(ts_name)
+      
       # 下载ts媒体文件
-      rsp = requests.get(ts_url, headers=headers,allow_redirects=True)
+      rsp = session.get(ts_url, headers=headers, allow_redirects=True, timeout=timeout)
       #history追踪页面重定向历史
       reditList = rsp.history #可以看出获取的是一个地址序列
       #获取重定向最终的url
       redit_url = reditList[len(reditList)-1].headers["location"]
+      
+      # 关闭请求 释放内存 
+      rsp.close() 
+      del(rsp)
+      
       # 下载ts媒体文件
-      con = requests.get(redit_url, headers=headers).content
+      rsp = session.get(redit_url, headers=headers, timeout=timeout)
+      con = rsp.content
       if cipher: # 解密
-        con = cipher.decrypt(con)
+        con = cipher.decrypt(rsp.content)
+        
+      # 关闭请求 释放内存 
+      rsp.close() 
+      del(rsp)
+        
       with open(os.path.join(ts_dir , ts_name), 'wb') as fw:
         fw.write(con)
-  
-  
+    
     print(media_ts_name)
     video_path = os.path.join(dpath, title + '.mp4') 
     if os.path.exists(video_path): 
@@ -137,6 +159,10 @@ if __name__ == '__main__':
   except Exception as ex:
     print(ex)
     print("download failed ：" + url)
+  finally:
+    # 关闭會話 释放内存 
+    session.close()
+    del(session)
 
    
   
