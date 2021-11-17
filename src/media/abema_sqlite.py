@@ -43,12 +43,15 @@ proxies = {
   'https': 'socks5://127.0.0.1:8580'
 }
 
-timeout=10
+TIMEOUT=10
+MAX_WORKERS=3
 
+# global socket proxy
 socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 7027)
 socket.socket = socks.socksocket
-socket.setdefaulttimeout(timeout)
+socket.setdefaulttimeout(TIMEOUT)
   
+# local 
 dbfile = 'D:/Database/SQLite/hls.db'
 tablename = 'ABEMA'
 dpath = 'D:/Back/'
@@ -119,7 +122,7 @@ def get_hls():
 
 # 更新狀態   update sqlite status  
 def upate_status(pk, status):
-  print("更新狀態 ...")
+  print("更新狀態開始 ...", pk, status)
   conn = sqlite3.connect(dbfile)
   
   #创建游标对象
@@ -130,8 +133,10 @@ def upate_status(pk, status):
     cursor.execute(sql, (status.value, pk))
   except Exception as e:
     print(e)
-    print("更新狀態失败 " , pk, status)
+    print("更新狀態失败 ..." , pk, status)
     exit(1)
+  else:
+    print("更新狀態成功...", pk, status)
   finally:
     # 关闭游标
     cursor.close()
@@ -150,7 +155,7 @@ sema = True
 def download(minyami):
   try:
     # 创建线程的线程池
-    executor = ThreadPoolExecutor(max_workers=3)
+    executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
     global sema
     sema = True
     
@@ -164,7 +169,7 @@ def download(minyami):
     upate_status(pk, Status.INIT)
     
     playlist = m3u8.load(url, http_client=http_client)  # this could also be an absolute filename
-    print(playlist.dumps())
+#     print(playlist.dumps())
     
     # 取得key 16位密钥    
     #EXT-X-KEY:METHOD=AES-128,URI="abematv-license://2mznKG7uJBm8NFeojhh1rH",IV=0x0e9ff06f46ffda25228ffd6b7369cb2a
@@ -194,7 +199,7 @@ def download(minyami):
     
     # 用来保存ts文件 
     ts_name = base64.b64encode(bytes(title, 'utf-8'))
-    ts_dir = os.path.join(dpath, '.ts/', str(ts_name, encoding = "utf-8"))
+    ts_dir = os.path.join(dpath, '.ts/', str(ts_name, encoding = "utf-8").replace('/',''))
     if not os.path.exists(ts_dir): 
       os.mkdir(ts_dir)
     
@@ -202,12 +207,21 @@ def download(minyami):
     # 下载ts媒体文件 
     pbar = tqdm(total=len(media_url_list), initial=1, unit='Piece', unit_scale=True, desc='Processing: ')
     pattern_ts = re.compile('.*\/(.*\.ts)', re.MULTILINE | re.DOTALL)
+    
+  
+#     requests.adapters.DEFAULT_RETRIES = 5
+    session = requests.session()   
+    session.keep_alive = False # 设置连接活跃状态为False
+    #设置重连次数
+    session.mount('http://', HTTPAdapter(max_retries=5))
+    session.mount('https://', HTTPAdapter(max_retries=5))
+    
     for ts_url in media_url_list:
       ts_name = pattern_ts.findall(ts_url)[0]
       media_ts_name.append(ts_name)
 #       print(ts_name, ts_url)
       # 通过submit函数提交执行的函数到线程池中，submit函数立即返回，不阻塞
-      futrue = executor.submit(down_from_url, ts_url, os.path.join(ts_dir , ts_name) , pbar)
+      futrue = executor.submit(down_from_url, session, ts_url, os.path.join(ts_dir , ts_name) , pbar)
       futrue.add_done_callback(callback)
       '''
       # 下载ts媒体文件
@@ -219,6 +233,8 @@ def download(minyami):
   
     # 相当于进程池的pool.close() pool.join()
     executor.shutdown()  
+    session.close()
+    del(session)
   
     if sema:
       # 合并ts文件转化为视频文件
@@ -243,31 +259,29 @@ def download(minyami):
     print(ex)
     print("download failed ：" + url )
     upate_status(pk, Status.FAILURE)
-    exit(1)
+#     exit(1)
 
 
 #  requests 下载文件
-def down_from_url(url, dst , pbar):
+def down_from_url(session, url, dst , pbar):
   global sema 
   if sema:
     try:
-  #     requests.adapters.DEFAULT_RETRIES = 5
-      session = requests.session()   
-      session.keep_alive = False # 设置连接活跃状态为False
-      #设置重连次数
-      session.mount('http://', HTTPAdapter(max_retries=3))
-      session.mount('https://', HTTPAdapter(max_retries=3))
-      
-      response = session.get(url, headers=headers, stream=True, timeout=timeout)
+      response = session.get(url, headers=headers, stream=True, timeout=TIMEOUT)
       total_size = int(response.headers['Content-Length'])
+        
+      if os.path.exists(dst):
+        file_size = os.path.getsize(dst)
+        if file_size == total_size:
+          pbar.update(1)
+          return True
+      #header = {"Range": "bytes=%s-%s" % (first_byte, file_size)}
+      
       with open(dst, 'wb') as of:
         for chunk in response.iter_content(chunk_size=1024):
           if chunk:
             of.write(chunk)
             
-      # 关闭请求 释放内存 
-      response.close() 
-      del(response)
       
       # 下载完毕后我会使用如下方式和上面的 total_size 进行对比
       with open(dst, 'r') as f:
@@ -281,8 +295,9 @@ def down_from_url(url, dst , pbar):
       pbar.update(1)
       return total_size == length
     finally:
-      session.close()
-      del(session)
+      # 关闭请求 释放内存 
+      response.close() 
+      del(response)
       
 
 
