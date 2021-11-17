@@ -43,8 +43,12 @@ proxies = {
   'https': 'socks5://127.0.0.1:8580'
 }
 
+# 連接超時時間(秒)
 TIMEOUT=10
+# 线程個數
 MAX_WORKERS=3
+# 设置重连次数
+MAX_RETRIES=5
 
 # global socket proxy
 socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 7027)
@@ -205,17 +209,15 @@ def download(minyami):
     
   
     # 下载ts媒体文件 
-    pbar = tqdm(total=len(media_url_list), initial=1, unit='Piece', unit_scale=True, desc='Processing: ')
-    pattern_ts = re.compile('.*\/(.*\.ts)', re.MULTILINE | re.DOTALL)
-    
-  
 #     requests.adapters.DEFAULT_RETRIES = 5
     session = requests.session()   
     session.keep_alive = False # 设置连接活跃状态为False
     #设置重连次数
-    session.mount('http://', HTTPAdapter(max_retries=5))
-    session.mount('https://', HTTPAdapter(max_retries=5))
+    session.mount('http://', HTTPAdapter(max_retries=MAX_RETRIES))
+    session.mount('https://', HTTPAdapter(max_retries=MAX_RETRIES))
     
+    pbar = tqdm(total=len(media_url_list), initial=1, unit='Piece', unit_scale=True, desc='Processing: ')
+    pattern_ts = re.compile('.*\/(.*\.ts)', re.MULTILINE | re.DOTALL)
     for ts_url in media_url_list:
       ts_name = pattern_ts.findall(ts_url)[0]
       media_ts_name.append(ts_name)
