@@ -298,6 +298,7 @@ def down_from_url(session, url, dst , pbar):
     except:
       traceback.print_exc()
       print(traceback.format_exc())
+      print("Error GET url :", url )
       return False
     else:
       pbar.update(1)
@@ -308,8 +309,6 @@ def down_from_url(session, url, dst , pbar):
         # 关闭请求 释放内存 
         response.close() 
         del(response)
-      else:
-        print("Error: url ", url )
 
 
 #  requests 下载回調
