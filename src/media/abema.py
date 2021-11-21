@@ -14,6 +14,7 @@ import socket
 import base64
 import shutil
 import threading
+import traceback
 import sqlite3
 import requests
 from requests.adapters import HTTPAdapter
@@ -83,8 +84,9 @@ def init_hls(title,url,key):
     data = (title,url,key) # or ['love2', 2221]
     sql = "INSERT INTO "+ tablename +"(title,url,key) VALUES(?, ?, ?)"
     cursor.execute(sql, data)
-  except Exception as e:
-    print(e)
+  except:
+    traceback.print_exc()
+    print(traceback.format_exc())
     print("数据初始化失败　:" ,title,url,key)
     exit(1)
   finally:
@@ -111,8 +113,9 @@ def get_hls():
     # fixed  Cannot operate on a closed cursor
     values = [x for x in cursor.execute(sql,(Status.SUCCESS.value,))]
     return values
-  except Exception as e:
-    print(e)
+  except:
+    traceback.print_exc()
+    print(traceback.format_exc())
     print("獲取下載鏈接失败")
     exit(1)
   finally:
@@ -135,8 +138,9 @@ def upate_status(pk, status):
     # 查询数据
     sql = "update " + tablename + " set status = ?  where id = ?"
     cursor.execute(sql, (status.value, pk))
-  except Exception as e:
-    print(e)
+  except:
+    traceback.print_exc()
+    print(traceback.format_exc())
     print("更新狀態失败 ..." , pk, status)
     exit(1)
   else:
@@ -203,7 +207,7 @@ def download(minyami):
     
     # 用来保存ts文件 
     ts_name = base64.b64encode(bytes(title, 'utf-8'))
-    ts_dir = os.path.join(dpath, '.ts/', str(ts_name, encoding = "utf-8").replace('/',''))
+    ts_dir = os.path.join(dpath, '.ts/', str(ts_name, encoding = "utf-8").replace('/','').replace('\\',''))
     if not os.path.exists(ts_dir): 
       os.mkdir(ts_dir)
     
@@ -257,8 +261,9 @@ def download(minyami):
           
       # 開始下載 更新狀態 
       upate_status(pk, Status.SUCCESS)
-  except Exception as ex:
-    print(ex)
+  except:
+    traceback.print_exc()
+    print(traceback.format_exc())
     print("download failed ：" + url )
     upate_status(pk, Status.FAILURE)
 #     exit(1)
@@ -290,17 +295,21 @@ def down_from_url(session, url, dst , pbar):
         if isinstance(f, io.TextIOBase):
           length = os.fstat(f.fileno()).st_size
             
-    except Exception as ex:
-      print(ex)
+    except:
+      traceback.print_exc()
+      print(traceback.format_exc())
       return False
     else:
       pbar.update(1)
       return total_size == length
     finally:
-      # 关闭请求 释放内存 
-      response.close() 
-      del(response)
-      
+      #  检查局部变量的是否存在：
+      if 'response' in locals():
+        # 关闭请求 释放内存 
+        response.close() 
+        del(response)
+      else:
+        print("Error: url ", url )
 
 
 #  requests 下载回調
