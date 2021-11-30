@@ -20,13 +20,14 @@ headers = {
 timeout=30
 
 # 'D:/bible'  '/home/app/Bible'
-basepath = 'D:/bible'
+basepath =  '/home/app/Bible'
 
 # 配置请求头 url  'https://www2.bible.com/ja/bible/83/%s.%s.JCB?show_audio=1'
 bible_dict = {
   'JCB': 'https://www2.bible.com/ja/bible/83/%s.%s.JCB?show_audio=1',
   'NASB': 'https://www2.bible.com/bible/100/%s.%s.nasb1995?show_audio=1',
-  'ESV': 'https://www2.bible.com/bible/59/%s.%s.esv?show_audio=1'
+  'ESV': 'https://www2.bible.com/bible/59/%s.%s.esv?show_audio=1',
+  'CUNP': 'https://www2.bible.com/bible/46/%s.%s.cunp?show_audio=1'
 }
 
 
@@ -90,6 +91,7 @@ def audio_download(book_dir, audio_name, url):
       else:
         response.close()  # 注意关闭response  
         break     
+
 
 if __name__ == "__main__":
   # nohup python bible.py NASB &
