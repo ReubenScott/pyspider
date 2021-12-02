@@ -49,12 +49,12 @@ cookies = [
 class Words:
                     
   #表記  英式  美式  词性  词义  文節（詞組）  意味
-  def __init__(self, spell, pron_en, pron_us, word_class , meanings , sentence , translation):
+  def __init__(self, spell, pron_en, pron_us, word_class , meaning , sentence , translation):
     self.spell = spell
     self.pron_en = pron_en
     self.pron_us = pron_us
     self.word_class = word_class
-    self.meanings = meanings
+    self.meaning = meaning
     self.sentence = sentence
     self.translation = translation
 
@@ -78,11 +78,11 @@ class Words:
     return hash((self.foo, self.bar))
   
   def __str__(self):
-    return "%s | %s | %s | %s | %s | %s | %s " %(self.spell, self.pron_en, self.pron_us, self.word_class , self.meanings , self.sentence , self.translation)
+    return "%s | %s | %s | %s | %s | %s | %s " %(self.spell, self.pron_en, self.pron_us, self.word_class , self.meaning , self.sentence , self.translation)
 
   #是否要更新  
   def need_fix(self):
-    return not (self.spell and self.pron_en and self.pron_us and self.word_class and self.meanings and self.sentence and self.translation)
+    return not (self.spell and self.pron_en and self.pron_us and self.word_class and self.meaning and self.sentence and self.translation)
 
 
   #是否 key 一樣
@@ -129,10 +129,10 @@ class ExcelHandler:
       pron_en = sheet.cell(row, 2).value
       pron_us = sheet.cell(row, 3).value
       word_class = sheet.cell(row, 4).value
-      meanings = sheet.cell(row, 5).value
+      meaning = sheet.cell(row, 5).value
       sentence = sheet.cell(row, 6).value
       translation = sheet.cell(row, 7).value
-      word = Words(spell, pron_en, pron_us, word_class , meanings , sentence , translation)
+      word = Words(spell, pron_en, pron_us, word_class , meaning , sentence , translation)
       
       words.append(word) 
       
@@ -184,19 +184,18 @@ class ExcelHandler:
       ws.cell(1, 6, "文節")
       ws.cell(1, 7, "意味")
       
-#       for row in range(0, len(words)):  # 第2行開始
-      for word in words:  # 第2行開始
-#         word = words[row]
-        row = ws.max_row + 1  # 開始
+      for row in range(0, len(words)): 
+        word = words[row]
+        row = row + 2   # 第2行開始 覆蓋
+#         row = ws.max_row + 1  # 原文件末尾開始 添加
   
         ws.cell(row, 1, word.spell)
         ws.cell(row, 2, word.pron_en)
         ws.cell(row, 3, word.pron_us)
         ws.cell(row, 4, word.word_class)
-        ws.cell(row, 5, word.meanings)
+        ws.cell(row, 5, word.meaning)
         ws.cell(row, 6, word.sentence)
         ws.cell(row, 7, word.translation)
-            
             
       # Save a file as sample_book.xlsx with save function.           
       wb.save(wbname)
@@ -261,46 +260,115 @@ def search_hjclass_dict(session, word):
 #     print(url, resp.status_code)
 #     print(response.content.decode())
 
-    # 创建soup对象 
-    soup = BeautifulSoup(resp.text, "html.parser") 
-#     example = soup.find('div', {'class': 'word-details '})
+    if resp:
+      # 创建soup对象 
+      soup = BeautifulSoup(resp.text, "html.parser") 
+  #     example = soup.find('div', {'class': 'word-details '})
+  
+      # 多種讀音
+      if len(soup.select('div.word-details div.word-details-pane')) > 0 : 
+        soup = BeautifulSoup(soup.select('div.word-details div.word-details-pane')[0].prettify(), "html.parser")    
+       
+      #單詞
+      if len(soup.select('div.word-info div.word-text h2')) > 0 :
+        spell = soup.select('div.word-info div.word-text h2')[0].text.strip()
+      
+        if spell == searchText: 
+          #發音
+          pronounces = soup.select('div.pronounces span')
+          if len(pronounces) == 6 : 
+            word.pron_en = '/' + pronounces[1].text.strip()[1:-1] + '/' # 音標 [ˈpʌpɪ]
+            word.accent_en = pronounces[2].attrs['data-src']  #  word-audio-en data-src="https://tts.hjapi.com/en-gb/61A364FE49D45BBB"
+          
+            word.pron_us = '/' + pronounces[4].text.strip()[1:-1] + '/'  # 音標 [ˈpʌpɪ]
+            word.accent_us = pronounces[5].attrs['data-src'] 
+          
+          #詞性
+          if len(soup.select('div.simple span')) > 0 :
+            word.word_class = soup.select('div.simple span')[0].text.strip()[0:-1]
+            #詞义
+            word.meaning = soup.select('div.simple span')[1].text.strip()
+  
+          #例句
+          example_sentence = soup.select('div.word-details-item-content section.detail-groups p.def-sentence-from')
+          word.sentence = (example_sentence[0].text.strip() if (len(example_sentence) > 0) else '')
+          
+          example_translation = soup.select('div.word-details-item-content section.detail-groups p.def-sentence-to')
+          word.translation = (example_translation[0].text.strip() if (len(example_translation) > 0) else '')
 
-    # 多種讀音
-    if len(soup.select('div.word-details div.word-details-pane')) > 0 : 
-      soup = BeautifulSoup(soup.select('div.word-details div.word-details-pane')[0].prettify(), "html.parser")    
-     
-    #單詞
-    if len(soup.select('div.word-info div.word-text h2')) > 0 :
-      spell = soup.select('div.word-info div.word-text h2')[0].text.strip()
-    
+
+
+# 查詢單詞  https://www.iciba.com
+def search_iciba_dict(session, word):
+  searchText = word.spell
+
+  if searchText:
+    url = 'https://www.iciba.com/word?w=' + searchText
+    resp = get_content(session, url)
+
+    if resp:
+      # 创建soup对象 
+      soup = BeautifulSoup(resp.text, "html.parser") 
+      
+      #獲取javascript 中Json對象  soup.findAll('script')[11].string.encode('utf8')  
+      resp_data = json.loads(soup.findAll('script' , attrs={"id": "__NEXT_DATA__", "type": "application/json"})[0].string)  
+      
+      baesInfo = resp_data["props"]["pageProps"]["initialReduxState"]["word"]["wordInfo"]["baesInfo"]
+      spell = baesInfo["word_name"]
       if spell == searchText: 
-        #發音
-        pronounces = soup.select('div.pronounces span')
-        if len(pronounces) == 6 : 
-          word.pron_en = '/' + pronounces[1].text.strip()[1:-1] + '/' # 音標 [ˈpʌpɪ]
-          word.accent_en = pronounces[2].attrs['data-src']  #  word-audio-en data-src="https://tts.hjapi.com/en-gb/61A364FE49D45BBB"
-        
-          word.pron_us = '/' + pronounces[4].text.strip()[1:-1] + '/'  # 音標 [ˈpʌpɪ]
-          word.accent_us = pronounces[5].attrs['data-src'] 
-        
+        word.pron_en = '/' + baesInfo["symbols"][0]["ph_en"] + '/' # 音標 [ˈpʌpɪ]
+        word.accent_en = baesInfo["symbols"][0]["ph_en_mp3"] #  word-audio-en data-src="https://tts.hjapi.com/en-gb/61A364FE49D45BBB"
+      
+        word.pron_us = '/' + baesInfo["symbols"][0]["ph_am"] + '/'  # 音標 [ˈpʌpɪ]
+        word.accent_us = baesInfo["symbols"][0]["ph_am_mp3"]
+    
         #詞性
-        if len(soup.select('div.simple span')) > 0 :
-          word.word_class = soup.select('div.simple span')[0].text.strip()[0:-1]
-          #詞义
-          word.meanings = soup.select('div.simple span')[1].text.strip()
-
+        word.word_class = baesInfo["symbols"][0]["parts"][0]["part"]
+        #詞义 list转string
+        word.meaning = ';'.join(baesInfo["symbols"][0]["parts"][0]["means"]) 
+      
         #例句
-        example_sentence = soup.select('div.word-details-item-content section.detail-groups p.def-sentence-from')
-        word.sentence = (example_sentence[0].text.strip() if (len(example_sentence) > 0) else '')
+        new_sentence = resp_data["props"]["pageProps"]["initialReduxState"]["word"]["wordInfo"]["new_sentence"]
+        word.sentence = new_sentence[0]["sentences"][0]["en"]
+        word.translation = new_sentence[0]["sentences"][0]["cn"]
         
-        example_translation = soup.select('div.word-details-item-content section.detail-groups p.def-sentence-to')
-        word.translation = (example_translation[0].text.strip() if (len(example_translation) > 0) else '')
 
 
+# 查詢單詞  https://dict.cn
+def search_dict_dict(session, word):
+  searchText = word.spell
+
+  if searchText:
+    url = 'https://dict.cn/search?q=' + searchText
+    resp = get_content(session, url)
+  
+    if resp:
+      # 创建soup对象 
+      soup = BeautifulSoup(resp.text, "html.parser") 
+  #     example = soup.find('div', {'class': 'word-details '})
+  
+      spell = soup.select('div#content  div.main div.word div.word-cont h1')[0].text
+      if spell == searchText: 
+        word.pron_en = '/' + soup.select('div#content div.main div.word div.phonetic bdo', attrs={"lang":"EN-US"})[0].text.strip()[1:-1] + '/' # 音標 [ˈpʌpɪ]
+        word.pron_us = '/' + soup.select('div#content div.main div.word div.phonetic bdo', attrs={"lang":"EN-US"})[1].text.strip()[1:-1] + '/'  # 音標 [ˈpʌpɪ]
+        
+        
+        if len(soup.select('div#content div.main div.word div.basic.clearfix ul li span')) > 0 :
+          #詞性
+          word.word_class = '/'.join([x.text.strip() for x in soup.select('div#content div.main div.word div.basic.clearfix ul li span')])  
+          #詞义 list转string
+          word.meaning = '/'.join([x.text.strip() for x in soup.select('div#content div.main div.word div.basic.clearfix ul li strong')])
+    
+        if len(soup.select('div#content div.main div.section.sent div.layout.sort ol li')) > 0 :
+          #例句
+          word.sentence = soup.select('div#content div.main div.section.sent div.layout.sort ol li')[0].contents[0].strip()
+          word.translation = soup.select('div#content div.main div.section.sent div.layout.sort ol li')[0].contents[2].strip()
+          
+    
 
 if __name__ == "__main__":    
   
-  words = ExcelHandler("D:/Back/英语词汇表.xlsx").get_data("Sheet1")  
+  words = ExcelHandler("E:/Back2/小学英语大纲词汇.xlsx").get_data("Sheet1")  
   print(words)
 
   session = requests.session()   
@@ -313,10 +381,12 @@ if __name__ == "__main__":
   # 爬取要素
   for word in words:
     if word.need_fix():
-      print(word)
-      search_hjclass_dict(session, word)
+#       search_hjclass_dict(session, word)
+#       search_iciba_dict(session, word)
+      search_dict_dict(session, word)
+      
       print(word)
       
-  ExcelHandler.create_to_excel('D:/back/hello.xlsx', words)
+  ExcelHandler.create_to_excel('E:/Back2/hello.xlsx', words)
 
   
