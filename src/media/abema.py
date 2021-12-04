@@ -45,7 +45,7 @@ proxies = {
 }
 
 # 連接超時時間(秒)
-TIMEOUT=10
+TIMEOUT=15
 # 线程個數
 MAX_WORKERS=3
 # 设置重连次数
@@ -57,9 +57,9 @@ socket.socket = socks.socksocket
 socket.setdefaulttimeout(TIMEOUT)
   
 # local 
-dbfile = 'D:/Database/SQLite/hls.db'
+dbfile = 'E:/Data/SQLite/hls.db'
 tablename = 'ABEMA'
-dpath = 'D:/Back/'
+dpath = 'E:/Back/'
 
 
 # 初始化下載信息
@@ -272,10 +272,11 @@ def download(minyami):
 #  requests 下载文件
 def down_from_url(session, url, dst , pbar):
   global sema 
+  resp = None
   if sema:
     try:
-      response = session.get(url, headers=headers, stream=True, timeout=TIMEOUT)
-      total_size = int(response.headers['Content-Length'])
+      resp = session.get(url, headers=headers, stream=True, timeout=TIMEOUT)
+      total_size = int(resp.headers['Content-Length'])
         
       if os.path.exists(dst):
         file_size = os.path.getsize(dst)
@@ -285,7 +286,7 @@ def down_from_url(session, url, dst , pbar):
       #header = {"Range": "bytes=%s-%s" % (first_byte, file_size)}
       
       with open(dst, 'wb') as of:
-        for chunk in response.iter_content(chunk_size=1024):
+        for chunk in resp.iter_content(chunk_size=1024):
           if chunk:
             of.write(chunk)
             
@@ -304,11 +305,10 @@ def down_from_url(session, url, dst , pbar):
       pbar.update(1)
       return total_size == length
     finally:
-      #  检查局部变量的是否存在：
-      if 'response' in locals():
-        # 关闭请求 释放内存 
-        response.close() 
-        del(response)
+      # 注意关闭response 释放内存
+      if resp:
+        resp.close()  
+        del(resp)
 
 
 #  requests 下载回調
