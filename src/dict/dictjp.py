@@ -173,11 +173,7 @@ def search_moji_dict(word):
                 if child.string:
                   example_item.append(child.string.strip())
                 else:
-                  soup = BeautifulSoup(child.decode(), "html.parser") 
-                  ruby = ''
-                  for rb in soup.select('ruby rb'):
-                    ruby = ruby + str(rb.text.split()[0])
-                  example_item.append(ruby)
+                  example_item.append(child.text.replace("(", "").replace(")", ""))
           
           if len(example_item) > 0 and not word.sentence:
             word.sentence = example_item[0]
