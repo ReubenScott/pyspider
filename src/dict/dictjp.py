@@ -189,7 +189,6 @@ def search_hjclass_dict(word):
   searchText = word.spell
   
   if searchText:
-    headers['User-Agent'] = useragents[random.randint(0, len(useragents)-1)]
     headers['Cookie'] = cookies[random.randint(0, len(cookies)-1)]
     url = 'https://dict.hjenglish.com/jp/jc/' + searchText
         
