@@ -126,6 +126,10 @@ def search_moji_dict(word):
         "_ApplicationId": "E62VyFVLMiW7kvbtVq3p"
     }
     resp = post_content(url, json.dumps(payload))
+    # 获取失败时退出
+    if not resp:
+      return
+    
 #     print(searchText , r.text)
     result = json.loads(resp.text);
 #     print(result["result"]["words"])
@@ -161,8 +165,12 @@ def search_moji_dict(word):
         # objectId  https://www.mojidict.com/details/198963336
         objectId = result["result"]["words"][0]["objectId"]
         if not word.sentence or not word.translation :
+          resp = get_content('https://www.mojidict.com/details/' + objectId)
+          # 获取失败时退出
+          if not resp:
+            return
           # 创建soup对象 
-          soup = BeautifulSoup(get_content('https://www.mojidict.com/details/' + objectId).content, "html.parser") 
+          soup = BeautifulSoup(resp.content, "html.parser") 
           example = soup.find('div', {'class': 'example-info'})
 #           print(example)
           #例文          
@@ -192,7 +200,10 @@ def search_hjclass_dict(word):
     # 获取状态 
 #     print(url, resp.status_code)
 #     print(response.content.decode())
-
+    # 获取失败时退出
+    if not resp:
+      return
+    
     # 创建soup对象 
     soup = BeautifulSoup(resp.text, "html.parser") 
 #     example = soup.find('div', {'class': 'word-details '})
