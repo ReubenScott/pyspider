@@ -6,7 +6,7 @@ from tkinter.constants import W, NONE, END
 import tkinter.filedialog
 import tkinter.messagebox
 
-from media import kikubon
+from src.media import kikubon
 
 
 class KikubonGui():

@@ -1,0 +1,10 @@
+.*
+*.pyc
+/.idea
+/Market.wpr
+/Market.wpu
+/venv
+__pycache__
+dist/
+build/
+/*.spec
