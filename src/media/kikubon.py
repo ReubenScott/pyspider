@@ -9,6 +9,7 @@ __Author__ = 'Negoo_wen'
 import os
 import shutil
 import base64
+import traceback
 import requests
 from requests.adapters import HTTPAdapter
 from Crypto.Cipher import AES
@@ -21,10 +22,11 @@ headers = {
   'Accept-Encoding': 'gzip, deflate, br',
   'Accept-Language': 'en-US,en;q=0.5',
   'Connection': 'keep-alive',
-  'Cookie': 'browsingData=%7B%220%22%3A%22614%22%2C%222%22%3A%22606%22%7D; _ga=GA1.2.807682766.1634046460; _gid=GA1.2.1364143737.1634046460; kikubonses=dvlt13r6f90gdsg6dmnmdmu8an; login20160719=7a427f1d045f3275ec3e9347c3b5b3ea7f34e64b; __c__login20160719=2c57df253e4154dfa922e18daab1f1b45533b067',
+  'Cookie': 'kikubonses=ggm3ijialp7up1van8i9lj5sim; login20160719=a4c8940220d0e0cea851043aec67f4b9e44c22c4; __c__login20160719=d41123a6e04fd28ae8a7bf2ccb6fcd22e38b2066; browsingData=["720"]; cookieconsent_status=deny',
 }
 
-timeout=10
+timeout = 10
+
 
 # Extract MP3 audio from Videos
 def video_to_mp3(file_name):
@@ -34,35 +36,40 @@ def video_to_mp3(file_name):
     dir_path = os.path.dirname(file_name)
     file_title = os.path.basename(file)
     wav_file = base64.b64encode(bytes(file_title, 'utf-8'))
-    wav_file = os.path.join(dir_path, str(wav_file, encoding = "utf-8"))
+    wav_file = os.path.join(dir_path, str(wav_file, encoding="utf-8"))
     # Convert video into .wav file
     os.system('ffmpeg -i {file}{ext} {tmp}.wav'.format(file=file, ext=extension, tmp=wav_file))
     # Convert .wav into final .mp3 file
-    os.system('lame {tmp}.wav {file}.mp3'.format(file=file, tmp=wav_file ))
+    os.system('lame {tmp}.wav {file}.mp3'.format(file=file, tmp=wav_file))
     os.remove('{}.wav'.format(wav_file))  # Deletes the .wav file
     print('"{}" successfully converted into MP3!'.format(file_name))
-  except OSError as err:
-    print(err)  
+  except:
+    print(traceback.format_exc())
     exit(1)
 
-
-if __name__ == '__main__':
   
+# 
+# url = "https://kikubon.jp/mlist.php?asKey=4097&.m3u8"
+# title = input('请输入保存文件名: ').strip()
+# Extract MP3 audio from Videos
 # 下载ts媒体文件
+def download_audio(url, dpath, file_name, cookie=None):
   try:
-    # 创建线程的线程池
-    dpath = 'D:/Back/'
+    url = url.strip()
+    title = file_name.strip()
     
+    # 保存目录未选择检验
+    assert dpath and dpath.strip() != "", "保存目录未设置"
+    
+    if cookie:
+      headers["Cookie"] = cookie.strip()
+    
+    # 创建线程的线程池
     session = requests.session()   
-    session.keep_alive = False # 设置连接活跃状态为False
-    #设置重连次数
+    session.keep_alive = False  # 设置连接活跃状态为False
+    # 设置重连次数
     session.mount('http://', HTTPAdapter(max_retries=3))
     session.mount('https://', HTTPAdapter(max_retries=3))
-    
-    # "https://kikubon.jp/mlist.php?asKey=4097&.m3u8"
-    url = input('请输入音频的HLS信息: ').strip()
-    title = input('请输入保存文件名: ').strip()
-    
     
     http_client = m3u8.httpclient.DefaultHTTPClient()
     
@@ -70,26 +77,24 @@ if __name__ == '__main__':
     print(playlist.dumps())
     
     # 取得key 16位密钥    
-    #EXT-X-KEY:METHOD=AES-128,URI="abematv-license://2mznKG7uJBm8NFeojhh1rH",IV=0x0e9ff06f46ffda25228ffd6b7369cb2a
+    # EXT-X-KEY:METHOD=AES-128,URI="abematv-license://2mznKG7uJBm8NFeojhh1rH",IV=0x0e9ff06f46ffda25228ffd6b7369cb2a
     for key in playlist.keys:
       if key:  # First one could be None
         key.uri
         key.method
-        
     
     rsp = session.get(key.uri, headers=headers, allow_redirects=True)
-    #history追踪页面重定向历史
-    reditList = rsp.history #可以看出获取的是一个地址序列
-    #获取重定向最终的url
-    redit_url = reditList[len(reditList)-1].headers["location"]
+    # history追踪页面重定向历史
+    reditList = rsp.history  # 可以看出获取的是一个地址序列
+    # 获取重定向最终的url
+    redit_url = reditList[len(reditList) - 1].headers["location"]
     
     rsp = session.get(redit_url, headers=headers)
-    password  = rsp.content
+    password = rsp.content
     # 初始化AES     
     cipher = AES.new(password, AES.MODE_CBC, password)
     
-    
-    #EXTINF  TS地址提取
+    # EXTINF  TS地址提取
     media_url_list = []
     media_ts_name = []
     for i in playlist.segments:
@@ -100,11 +105,10 @@ if __name__ == '__main__':
     
     # 用来保存ts文件 
     ts_dir = base64.b64encode(bytes(title, 'utf-8'))
-    ts_dir = os.path.join(dpath, '.ts/', str(ts_dir, encoding = "utf-8"))
+    ts_dir = os.path.join(dpath, '.ts/', str(ts_dir, encoding="utf-8"))
     if not os.path.exists(ts_dir): 
-      os.mkdir(ts_dir)
-    
-    
+      os.makedirs(ts_dir)
+        
     # 下载ts媒体文件
     for index, ts_url in enumerate(media_url_list):
       ts_name = str(index) + '.ts'
@@ -113,10 +117,10 @@ if __name__ == '__main__':
       
       # 下载ts媒体文件
       rsp = session.get(ts_url, headers=headers, allow_redirects=True, timeout=timeout)
-      #history追踪页面重定向历史
-      reditList = rsp.history #可以看出获取的是一个地址序列
-      #获取重定向最终的url
-      redit_url = reditList[len(reditList)-1].headers["location"]
+      # history追踪页面重定向历史
+      reditList = rsp.history  # 可以看出获取的是一个地址序列
+      # 获取重定向最终的url
+      redit_url = reditList[len(reditList) - 1].headers["location"]
       
       # 关闭请求 释放内存 
       rsp.close() 
@@ -125,7 +129,7 @@ if __name__ == '__main__':
       # 下载ts媒体文件
       rsp = session.get(redit_url, headers=headers, timeout=timeout)
       con = rsp.content
-      if cipher: # 解密
+      if cipher:  # 解密
         con = cipher.decrypt(rsp.content)
         
       # 关闭请求 释放内存 
@@ -156,15 +160,21 @@ if __name__ == '__main__':
       shutil.rmtree(ts_dir)
     else:
       print("Extract MP3 failed ：" + video_path)
-  except Exception as ex:
-    print(ex)
+    return True  
+  except:
+    print(traceback.format_exc())
     print("download failed ：" + url)
+    return False
   finally:
     # 关闭會話 释放内存 
     session.close()
     del(session)
 
    
-  
-  
+if __name__ == '__main__':
+    dpath = 'D:/Back/'
+    # "https://kikubon.jp/mlist.php?asKey=4097&.m3u8"
+    url = input('请输入音频的HLS信息: ').strip()
+    title = input('请输入保存文件名: ').strip()
+    download_audio(url, dpath, title)
   
