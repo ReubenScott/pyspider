@@ -1,0 +1,7 @@
+/.idea
+/Market.wpr
+/Market.wpu
+__pycache__
+/venv
+src/dist
+src/build
