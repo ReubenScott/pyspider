@@ -1,8 +1,10 @@
 import requests
 import traceback
+import csv
+
 
 from src.api import database
-from src.model.FundamentalData import CompanyOverview, IncomeStatement, BalanceSheet, CashFlow, Earnings
+from src.model.FundamentalData import CompanyOverview, IncomeStatement, BalanceSheet, CashFlow, Earnings, ListingStatus
 
 # https://www.alphavantage.co/support/#api-key
 apikey = "RSNV5C041ETQCGWI"
@@ -63,7 +65,7 @@ def income_statement(symbol):
             entities.append(IncomeStatement.from_json(report))
 
         # データ登録
-        database.save_many(*entities)
+        database.insert_many(*entities)
     except:
         print("income_statement except:")
         traceback.print_exc()
@@ -99,7 +101,7 @@ def balance_sheet(symbol):
             entities.append(BalanceSheet.from_json(report))
 
         # データ登録
-        database.save_many(*entities)
+        database.insert_many(*entities)
     except:
         print("balance_sheet insert except:")
         traceback.print_exc()
@@ -134,7 +136,7 @@ def cash_flow(symbol):
             entities.append(CashFlow.from_json(report))
 
         # データ登録
-        database.save_many(*entities)
+        database.insert_many(*entities)
     except:
         print("balance_sheet insert except:")
         traceback.print_exc()
@@ -169,7 +171,7 @@ def earnings(symbol):
             entities.append(Earnings.from_json(report))
 
         # データ登録
-        database.save_many(*entities)
+        database.insert_many(*entities)
     except:
         print("balance_sheet insert except:")
         traceback.print_exc()
@@ -179,7 +181,7 @@ def earnings(symbol):
         pass
 
 
-def listing_status(symbol):
+def listing_status():
     try:
         # Querying all active stocks and ETFs as of the latest trading day:
         # https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo
@@ -188,7 +190,38 @@ def listing_status(symbol):
         # https://www.alphavantage.co/query?function=LISTING_STATUS&date=2014-07-10&state=delisted&apikey=demo
 
         url = 'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo'
-        url = "https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo"
+
+        # 使用 format() 方法替换字符串
+        url = url.format(apikey=apikey)
+        print(url)
+
+        response = requests.get(url)
+
+
+        entities = []
+
+        # 检查响应状态码
+        if response.status_code == 200:
+            # 将响应内容写入文件
+
+            # 将响应内容解码为字符串
+            content = response.content.decode("utf-8")
+
+            # 创建 CSV 读取器
+            reader = csv.reader(content.splitlines())
+
+            # 忽略表头
+            next(reader, None)
+            for row in reader:
+                # 将数据写入数据库
+                symbol, exchange, name, assetType, ipoDate, delistingDate, status = row
+                entities.append(ListingStatus(symbol=symbol, exchange=exchange, name=name, assetType=assetType, ipoDate=ipoDate, delistingDate=delistingDate, status=status))
+
+            # データ更新
+            database.save_many(*entities)
+        else:
+            # 处理错误
+            print(f"下载失败，HTTP 状态码：{response.status_code}")
 
     except:
         print("balance_sheet insert except:")

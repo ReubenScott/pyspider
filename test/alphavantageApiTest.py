@@ -9,7 +9,9 @@ from src.api import alphavantage
 # data = alphavantage.balance_sheet("GOOG")
 # data = alphavantage.cash_flow("GOOG")
 
-data = alphavantage.earnings("GOOG")
+# data = alphavantage.earnings("GOOG")
+
+data = alphavantage.listing_status()
 
 
 # FundamentalData.update(data)

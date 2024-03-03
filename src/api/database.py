@@ -1,9 +1,10 @@
 import traceback
 
 from src.config.env import db
+from peewee import DoesNotExist
 
 
-# 插入数据 save
+# 插入单条数据
 # model = CompanyOverview(Symbol='IBM1', AssetType='22313', Name='B1ob')
 # model.save(force_insert=True)
 def save(modle):
@@ -18,7 +19,8 @@ def save(modle):
     pass
 
 
-def save_many(*entities):
+# 批量插入数据
+def insert_many(*entities):
   try:
     with db.transaction():
       # 插入数据
@@ -61,6 +63,46 @@ def update(model_class, json_dcit, fields=None):
     return True
   finally:
     pass
+
+# 批量插入或更新数据
+# ListingStatus.get_by_id((symbol == symbol) & (exchange == exchange))
+def save_many(*entities):
+  try:
+    with db.transaction():
+      for entity in entities:
+
+        query = entity.select()
+        #  primary_key 字段名
+        for field in entity._meta.primary_key.field_names:
+          query = query.where(getattr(type(entity), field) == getattr(entity, field))
+
+        try:
+          query.get()
+        except DoesNotExist:
+          # increat
+          entity.save(force_insert=True)
+        else:
+          query = entity.select()
+          #  全字段名
+          for field in entity.__data__.keys():
+            query = query.where(getattr(type(entity), field) == getattr(entity, field))
+
+          try:
+            query.get()
+          except DoesNotExist:
+            # update
+            entity.save()
+
+      db.commit()
+  except:
+    db.rollback()
+    # traceback.print_exc()
+    raise ValueError("database insert except:")
+  else:
+    return True
+  finally:
+    pass
+
 
 
 def delete(model_class, json_dcit):
