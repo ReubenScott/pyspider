@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 import sys
 
@@ -10,6 +12,7 @@ if __name__ == '__main__':
     '--clean',
     '--name=kikubon',
     'src/gui/kikubon_gui.py',
+    # '--add-binary={0};lib'.format(os.path.realpath('lib/ffmpeg.exe')),
     '-y',
     '--distpath=./dist'
   ]

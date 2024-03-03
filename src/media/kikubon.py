@@ -14,6 +14,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from Crypto.Cipher import AES
 import m3u8
+import ffmpeg 
 
 # 配置headers防止被墙，一般问题不大  '': '',
 headers = {
@@ -22,14 +23,14 @@ headers = {
   'Accept-Encoding': 'gzip, deflate, br',
   'Accept-Language': 'en-US,en;q=0.5',
   'Connection': 'keep-alive',
-  'Cookie': 'kikubonses=ggm3ijialp7up1van8i9lj5sim; login20160719=a4c8940220d0e0cea851043aec67f4b9e44c22c4; __c__login20160719=d41123a6e04fd28ae8a7bf2ccb6fcd22e38b2066; browsingData=["720"]; cookieconsent_status=deny',
+  'Cookie': 'kikubonses=k5cmvdu28mp5k0bip37ceu3q0c; login20160719=7bba5eb67ba0bc9c0568348ef1b34b396fe476fb; __c__login20160719=4f636fc56a71d6f094aceed9139f699cebc17ebb; _ga=GA1.2.1281779443.1694432659; _ga_T5Y24ZQPY9=GS1.2.1694432659.1.0.1694432659.0.0.0; browsingData=%7B%220%22%3A%22830%22%2C%223%22%3A%22552%22%2C%224%22%3A%22776%22%2C%226%22%3A%22638%22%2C%228%22%3A%22453%22%2C%2210%22%3A%22502%22%2C%2211%22%3A%22135%22%2C%2214%22%3A%22819%22%7D',
 }
 
 timeout = 10
 
 
 # Extract MP3 audio from Videos
-def video_to_mp3(file_name):
+def video_to_mp3_bak(file_name):
   """ Transforms video file into a MP3 file """
   try:
     file, extension = os.path.splitext(file_name)
@@ -42,6 +43,25 @@ def video_to_mp3(file_name):
     # Convert .wav into final .mp3 file
     os.system('lame {tmp}.wav {file}.mp3'.format(file=file, tmp=wav_file))
     os.remove('{}.wav'.format(wav_file))  # Deletes the .wav file
+    print('"{}" successfully converted into MP3!'.format(file_name))
+  except:
+    print(traceback.format_exc())
+    exit(1)
+
+ 
+# Extract MP3 audio from Videos
+def video_to_mp3(file_name):
+  """ Transforms video file into a MP3 file """
+  try:
+    file, extension = os.path.splitext(file_name)
+    dir_path = os.path.dirname(file_name)
+    file_title = os.path.basename(file)
+    # 入力 
+    stream = ffmpeg.input(os.path.join(dir_path, file_title + extension))
+    # 出力 
+    stream = ffmpeg.output(stream, os.path.join(dir_path, file_title + ".mp3"))
+    # 実行 
+    ffmpeg.run(stream, quiet=True, overwrite_output=True)
     print('"{}" successfully converted into MP3!'.format(file_name))
   except:
     print(traceback.format_exc())
@@ -68,8 +88,11 @@ def download_audio(url, dpath, file_name, cookie=None):
     session = requests.session()   
     session.keep_alive = False  # 设置连接活跃状态为False
     # 设置重连次数
-    session.mount('http://', HTTPAdapter(max_retries=3))
-    session.mount('https://', HTTPAdapter(max_retries=3))
+    # session.mount('http://', HTTPAdapter(max_retries=3))
+    # session.mount('https://', HTTPAdapter(max_retries=3))
+    adapter = HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=10)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
     
     http_client = m3u8.httpclient.DefaultHTTPClient()
     

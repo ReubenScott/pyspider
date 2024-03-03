@@ -20,10 +20,11 @@ headers = {
 timeout=30
 
 # 'D:/bible'  '/home/app/Bible'
-basepath =  '/home/app/Bible'
+basepath =  'F:/Bible'
 
 # 配置请求头 url  'https://www2.bible.com/ja/bible/83/%s.%s.JCB?show_audio=1'
 bible_dict = {
+  '新共同訳': 'https://www2.bible.com/ja/bible/1819/%s.%s.新共同訳?show_audio=1',
   'JCB': 'https://www2.bible.com/ja/bible/83/%s.%s.JCB?show_audio=1',
   'NASB': 'https://www2.bible.com/bible/100/%s.%s.nasb1995?show_audio=1',
   'ESV': 'https://www2.bible.com/bible/59/%s.%s.esv?show_audio=1',
