@@ -1,6 +1,6 @@
 import traceback
 
-from src.config import db
+from src.config.env import db
 
 
 # 插入数据 save

@@ -1,5 +1,3 @@
-import reloadium
-
 from src.model.FundamentalData import CompanyOverview
 from src.api import database
 from src.api import alphavantage

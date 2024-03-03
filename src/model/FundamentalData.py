@@ -1,7 +1,7 @@
 from peewee import SqliteDatabase, Model, CharField, IntegerField, DateField, BooleanField, CompositeKey, \
   PrimaryKeyField, DecimalField
 
-from src.config import db
+from src.config.env import db
 
 # db = SqliteDatabase('E:/Documents/market.db')
 # db.connect()
