@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from src.model.FundamentalData import CompanyOverview
 from src.api import database
 from src.api import alphavantage
