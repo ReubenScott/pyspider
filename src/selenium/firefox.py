@@ -19,13 +19,18 @@ def run():
     options.binary_location = 'D:/Application/Browser/Firefox-78/firefox.exe'
     # 设置首选项 (preferences)
     options.set_preference("webdriver.gecko.driver", "D:/Application/Browser/webdriver/geckodriver.exe")
+    # 设置 headless 模式
+    options.add_argument('--headless')
 
     browser = webdriver.Firefox(options=options)
     # 安装扩展程序 (addons)  可选，替换为扩展程序路径
     # browser.install_addon("D:/Application/Browser/webdriver/selenium_ide-3.17.4.xpi")
 
+
     browser.get('http://www.yahoo.com')
     assert 'Yahoo' in browser.title
+
+    print(browser.title)
 
     elem = browser.find_element(By.NAME, 'p')  # Find the search box
     elem.send_keys('seleniumhq' + Keys.RETURN)
