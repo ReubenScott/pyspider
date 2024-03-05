@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# 目標株価まとめ  値上がり率 / 値下がり率ランキング  Price Increase / Price Decrease Ranking
+# https://www.kabuka.jp.net/neagari-nesagari.html
+
+
 import time
 import random
 import re
@@ -15,8 +19,6 @@ from src.config.env import useragents
 # 使用 time() 函数
 start_time = time.time()
 
-# 目標株価まとめ  値上がり率 / 値下がり率ランキング  Price Increase / Price Decrease Ranking
-# https://www.kabuka.jp.net/neagari-nesagari.html
 url = 'https://www.kabuka.jp.net/neagari-nesagari.html'
 browser = StatefulBrowser(user_agent=useragents[random.randint(0, len(useragents) - 1)])
 browser.open(url)
