@@ -11,6 +11,39 @@ from src.config.env import db
 # db.create_tables([CompanyOverview, IncomeStatement])
 
 
+class CompanyProfile(Model):
+  class Meta:
+    case_sensitive = False
+    database = db  # this model uses the people database
+    primary_key = CompositeKey('symbol')
+
+  symbol                = CharField() 
+  spotlight             = CharField() 
+  name                  = CharField() 
+  industry              = CharField() 
+  exchange              = CharField() 
+  amount_of_sales       = CharField() 
+  net_income            = CharField() 
+  sales_cf              = CharField() 
+  total_assets          = CharField() 
+  cash_and_deposits     = CharField() 
+  total_capital         = CharField() 
+  average_annual_income = CharField() 
+
+  # 指定反序列化时要使用的字段　属性名が不一致に対応
+  @classmethod
+  def from_json(cls, json_data):
+    return cls(
+      **json_data
+    )
+
+  # 指定字段名和 JSON key 的对应关系
+  def to_json(self):
+    return {
+      **self.__data__,
+    }
+
+
 class ListingStatus(Model):
   class Meta:
     case_sensitive = False
