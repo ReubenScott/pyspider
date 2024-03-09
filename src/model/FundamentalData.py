@@ -15,6 +15,7 @@ class CompanyProfile(Model):
   class Meta:
     case_sensitive = False
     database = db  # this model uses the people database
+    table_name = 'company_profile'
     primary_key = CompositeKey('symbol')
 
   symbol                = CharField() 
@@ -28,7 +29,18 @@ class CompanyProfile(Model):
   total_assets          = CharField() 
   cash_and_deposits     = CharField() 
   total_capital         = CharField() 
-  average_annual_income = CharField() 
+  average_annual_income = CharField()
+  establishment_date = CharField()
+  sector = CharField()
+  index_adoption  = CharField()
+  url = CharField()
+  representative  = CharField() # 代表者
+  listing_date = CharField()  # 上場年月日
+  per_unit = CharField()  # 単元株数
+  capital_stock   = CharField() # 資本金
+  address  = CharField() # 本社住所
+  tel  = CharField() # 電話番号
+
 
   # 指定反序列化时要使用的字段　属性名が不一致に対応
   @classmethod
