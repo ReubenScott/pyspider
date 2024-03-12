@@ -24,6 +24,10 @@ class Nikkei:
       '東証業種名': 'industry',
       '指数採用': 'index_adoption',
       'URL': 'url',
+      '代表者氏名': 'representative',
+      '売買単位': 'per_unit',
+      '本社住所': 'address',
+      '電話番号': 'tel',
     }
 
     # 企業情報
@@ -44,7 +48,7 @@ class Nikkei:
           key = mapping[key]
           setattr(row, key, value)
 
-      database.update(row, fields=['establishment_date', 'sector']);
+      database.update(row, fields=['establishment_date', 'sector', 'index_adoption', 'url', 'representative', 'per_unit', 'address', 'tel']);
 
     browser.close()
 
