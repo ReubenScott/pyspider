@@ -21,7 +21,10 @@ class Minkabu:
     mapping = {
       '上場市場': 'exchange',
       '上場年月日': 'listing_date',
-      '単元株数': 'per_unit'
+      '単元株数': 'per_unit',
+      '住所': 'address',
+      '電話番号(IR)': 'tel',
+      '資本金': 'capital_stock',
     }
 
     # 企業情報
@@ -33,31 +36,19 @@ class Minkabu:
       print(url.format(symbol=row.symbol))
       browser.open(url.format(symbol=row.symbol))
 
-      # browser.page.select('div[class="ly_content_wrapper"] dl[class="md_dataList"]')
-
       # 株式（上場市場）の状況
-      stock_listed_market_status = browser.page.select('div[class="ly_content_wrapper"] dl[class="md_dataList"]')[1].text
+      stock_listed_market_status = [element.text for element in browser.page.select('div[class="ly_content_wrapper"] dl[class="md_dataList"]')]
 
-      matches = re.findall(r"(\S+.*?)\n+", stock_listed_market_status)
-      key = matches[0]
-      value = matches[1]
-      if key in mapping.keys():
-        key = mapping[key]
-        setattr(row, key, value)
+      # 遍历所有元素并获取文本内容
+      for element in stock_listed_market_status:
+        matches = re.findall(r"(\S+.*?)\n+", element)
+        for i in range(0, len(matches), 2):
+          key, value = matches[i], matches[i + 1]
+          if key in mapping.keys():
+            key = mapping[key]
+            setattr(row, key, value)
 
-      key = matches[2]
-      value = matches[3]
-      if key in mapping.keys():
-        key = mapping[key]
-        setattr(row, key, value)
-
-      key = matches[4]
-      value = matches[5]
-      if key in mapping.keys():
-        key = mapping[key]
-        setattr(row, key, value)
-
-      database.update(row, fields=['listing_date']);
+      database.update(row, fields=['listing_date', 'tel'])
 
     browser.close()
 

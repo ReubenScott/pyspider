@@ -49,7 +49,7 @@ def save_data(brief_elements, disp_elements):
     spotlight = brief_elements[i].contents[3].contents[0].attrs['title'].strip()  # 注目度
     name = brief_matches[1].strip()  # 企業名
     symbol = brief_matches[2].strip()  # コード
-    industry = brief_matches[3].strip()  # 業種
+    sector = brief_matches[3].strip()  # 業種
     exchange = brief_matches[4].strip()  # 市場名
     amount_of_sales = brief_matches[5].strip()  # 売上高
 
@@ -57,7 +57,7 @@ def save_data(brief_elements, disp_elements):
     # print(f"順位：{number}")
     # print(f"企業名：{name}")
     # print(f"コード：{symbol}")
-    # print(f"業種：{industry}")
+    # print(f"業種：{sector}")
     # print(f"市場名：{exchange}")
     # print(f"売上高：{amountOfSales}")
 
@@ -84,8 +84,8 @@ def save_data(brief_elements, disp_elements):
     assert (brief_matches[1] == disp_matches[1]) & (brief_matches[5] == disp_matches[2]), "順位 {} 必须是同一家企业: {} {} {} {}".format(brief_matches[1], brief_matches[1], disp_matches[1], brief_matches[5], disp_matches[2])
 
     # 创建一个列表
-    # data.append([symbol, number, name, industry, exchange, amount_of_sales, net_income, sales_cf, total_assets, cash_and_deposits, total_capital, average_annual_income])
-    entity = CompanyProfile(symbol=symbol, spotlight=spotlight, name=name, industry=industry
+    # data.append([symbol, number, name, sector, exchange, amount_of_sales, net_income, sales_cf, total_assets, cash_and_deposits, total_capital, average_annual_income])
+    entity = CompanyProfile(symbol=symbol, spotlight=spotlight, name=name, sector=sector
                             , exchange=exchange, amount_of_sales=amount_of_sales, net_income=net_income
                             , sales_cf=sales_cf, total_assets=total_assets, cash_and_deposits=cash_and_deposits
                             , total_capital=total_capital, average_annual_income=average_annual_income)
