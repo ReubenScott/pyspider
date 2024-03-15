@@ -7,7 +7,7 @@ if __name__ == '__main__':
   from PyInstaller import __main__ 
   params = [
     '-F',
-    # '-w',
+    '-w',
     '--noupx',
     '--clean',
     '--name=StocksFetcher',

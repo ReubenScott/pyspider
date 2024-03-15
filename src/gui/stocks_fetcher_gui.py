@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import os
 from tkinter import StringVar, LabelFrame, Label, Entry, Button, Text, Tk
 from tkinter.constants import W, NONE, END
@@ -29,10 +30,20 @@ class FetcherGui():
     
     # cookie
     self.cookie = StringVar()
+
+    # 将控制台输出重定向到Tkinter
+    sys.stdout = self
+
+  # 控制台输出
+  def write(self, message):
+    self.text.insert(END, str(message))
+    self.text.see(END)
+    self.text.update()
+
     
   # 设置窗口
   def set_init_window(self):
-    self.init_window_name.title("kikubon.jp 下载工具")
+    self.init_window_name.title("股票数据下载工具")
     self.init_window_name.geometry('+500+200')
     
     input_frame = LabelFrame(text="配置")
@@ -65,9 +76,9 @@ class FetcherGui():
     
     Button(action_frame, text="开始下载", command=self.download).grid(row=0, column=0)
     
-    text = Text(action_frame, width=100, height=10, wrap=NONE)
-    text.insert('1.0', '这是文本框,你可以输入任何内容')
-    text.grid(row=1, column=0, sticky=W) 
+    self.text = Text(action_frame, width=100, height=40, wrap=NONE)
+    self.text.grid(row=1, column=0, sticky=W)
+
   
   # 选择保存的SQLite数据文件
   def select_data_file(self):
