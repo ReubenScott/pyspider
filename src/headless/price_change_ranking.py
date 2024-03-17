@@ -8,6 +8,7 @@
 import time
 import random
 import re
+import traceback
 from mechanicalsoup import StatefulBrowser
 
 from src.config.env import useragents
@@ -22,15 +23,18 @@ from src.headless.yahoo import Yahoo
 
 
 async def update_profile(symbol):
-  await asyncio.sleep(2)
-  Kabumap.update_company_profile(symbol)
-  Nikkei.update_company_profile(symbol)
-  Kabuyoho.update_company_profile(symbol)
-  Minkabu.update_company_profile(symbol)
-  Yahoo.update_company_profile(symbol)
-  # await asyncio.gather()
-
-
+  try:
+    await asyncio.sleep(2)
+    Kabumap.update_company_profile(symbol)
+    Nikkei.update_company_profile(symbol)
+    Kabuyoho.update_company_profile(symbol)
+    Minkabu.update_company_profile(symbol)
+    Yahoo.update_company_profile(symbol)
+    # await asyncio.gather()
+  except:
+    traceback.print_exc()
+  finally:
+    pass
 
 # 使用 time() 函数
 start_time = time.time()

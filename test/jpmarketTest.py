@@ -4,6 +4,7 @@ from src.headless.kabumap import Kabumap
 from src.headless.kabuyoho import Kabuyoho
 from src.headless.minkabu import Minkabu
 from src.headless.nikkei import Nikkei
+from src.headless.reuters import Reuters
 from src.headless.toyokeizai import Toyokeizai
 from src.headless.yahoo import Yahoo
 from src.model.FundamentalData import CompanyProfile
@@ -15,5 +16,6 @@ from src.model.FundamentalData import CompanyProfile
 # Minkabu.update_company_profile('6659')
 # Yahoo.update_company_profile('6659')
 
+Reuters.update_company_profile('6659')
 
-Toyokeizai.update_company_profile('6659')
+# Toyokeizai.update_company_profile('6659')

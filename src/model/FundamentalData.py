@@ -45,7 +45,8 @@ class CompanyProfile(Model):
   pbr                      = CharField()  # 市净率
   eps                      = CharField()  # 每股收益  (TTM)
   roa                      = CharField()  # ROA
-  roe                      = CharField()  # ROE
+  roe                      = CharField()  # ROE股东权益回报率
+  debt_equity_ratio        = CharField()  # 债务权益比率
   own_capital_ratio        = CharField()  # 自己資本比率
   market_cap               = CharField()  # 時価総額(百万円)
   enterprise_value         = CharField()  # 企業価値

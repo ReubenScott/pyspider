@@ -34,6 +34,7 @@ class Yahoo:
       'Forward Annual Dividend Yield': 'dividend_yield',
       'Ex-Dividend Date': 'ex_dividend_date',
       'Book Value Per Share': 'book_value_per_share',
+      'Total Debt/Equity': 'debt_equity_ratio',
     }
 
     # 企業情報
@@ -60,7 +61,7 @@ class Yahoo:
           key = mapping[key]
           setattr(row, key, value)
 
-      database.update(row, fields=['enterprise_value', 'ex_dividend_date', 'year_low', 'year_high', 'year_change', 'pbr', 'per', 'roa', 'roe', 'eps', 'dividend_yield', 'book_value_per_share'])
+      database.update(row, fields=['enterprise_value', 'ex_dividend_date', 'year_low', 'year_high', 'year_change', 'pbr', 'per', 'roa', 'roe', 'eps', 'dividend_yield', 'book_value_per_share', 'debt_equity_ratio'])
 
     browser.close()
 
